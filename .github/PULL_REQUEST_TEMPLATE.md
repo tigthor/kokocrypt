@@ -5,21 +5,35 @@
   and (hopefully) merge of your change.
 -->
 
-### Description of change
+# Pull Request
 
-<!--
-  Please be clear and concise what the change is intended to do,
-  why this change is needed, and how you've verified that it
-  corrects what you intended.
+## Description
 
-  In some cases it may be helpful to include the current behavior
-  and the new behavior.
+Please include a summary of the change and which issue is fixed. Also include relevant motivation and context.
 
-  If the change is related to an open issue, you can link it here.
-  If you include `Fixes #0000` (replacing `0000` with the issue number)
-  when this is merged it will automatically mark the issue as fixed and
-  close it.
--->
+Fixes # (issue)
+
+## Type of change
+
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+- [ ] Other (describe):
+
+## Checklist
+
+- [ ] My code follows the style guidelines of this project
+- [ ] I have performed a self-review of my code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+
+## Screenshots (if applicable)
+
+## Additional context
 
 ### Pull-Request Checklist
 
