@@ -1,10 +1,5 @@
 import { Controller } from '@nestjs/common';
-import {
-  MessagePattern,
-  Payload,
-  Transport,
-  KafkaMessage,
-} from '@nestjs/microservices';
+import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
 import { KafkaService } from './kafka.service';
 import { CryptoService } from '../core/crypto.service';
 
@@ -12,21 +7,19 @@ import { CryptoService } from '../core/crypto.service';
 export class KafkaController {
   constructor(
     private readonly kafkaService: KafkaService,
-    private readonly cryptoService: CryptoService,
+    private readonly cryptoService: CryptoService
   ) {}
 
   @MessagePattern('test.topic', Transport.KAFKA)
-  async handleTestMessage(
-    @Payload() message: KafkaMessage,
-  ): Promise<any> {
+  async handleTestMessage(@Payload() message: any): Promise<any> {
     console.log('📥 Received message on test.topic');
     try {
       // Decrypt the message
       const decrypted = await this.cryptoService.unboxRaw(
         message.value as any,
-        Buffer.from('test-key'),
+        Buffer.from('test-key')
       );
-      
+
       // Process the message
       const data = JSON.parse(decrypted.toString());
       console.log('✓ Message decrypted and processed:', data);
@@ -34,9 +27,7 @@ export class KafkaController {
       // Encrypt the response
       const response = await this.cryptoService.boxRaw(
         Buffer.from(JSON.stringify(data)),
-        Buffer.from('test-key'),
-        'test-session',
-        Date.now(),
+        Buffer.from('test-key')
       );
 
       return response;
@@ -47,17 +38,15 @@ export class KafkaController {
   }
 
   @MessagePattern('test.batch', Transport.KAFKA)
-  async handleBatchMessage(
-    @Payload() message: KafkaMessage,
-  ): Promise<any> {
+  async handleBatchMessage(@Payload() message: any): Promise<any> {
     console.log('📥 Received message on test.batch');
     try {
       // Decrypt the message
       const decrypted = await this.cryptoService.unboxRaw(
         message.value as any,
-        Buffer.from('test-key'),
+        Buffer.from('test-key')
       );
-      
+
       // Process the batch message
       const data = JSON.parse(decrypted.toString());
       console.log('✓ Batch message decrypted and processed:', data);
@@ -65,9 +54,7 @@ export class KafkaController {
       // Encrypt the response
       const response = await this.cryptoService.boxRaw(
         Buffer.from(JSON.stringify(data)),
-        Buffer.from('test-key'),
-        'test-session',
-        Date.now(),
+        Buffer.from('test-key')
       );
 
       return response;
@@ -78,17 +65,15 @@ export class KafkaController {
   }
 
   @MessagePattern('test.errors', Transport.KAFKA)
-  async handleErrorMessage(
-    @Payload() message: KafkaMessage,
-  ): Promise<any> {
+  async handleErrorMessage(@Payload() message: any): Promise<any> {
     console.log('📥 Received message on test.errors');
     try {
       // Attempt to decrypt invalid data (will fail)
       const decrypted = await this.cryptoService.unboxRaw(
         message.value as any,
-        Buffer.from('test-key'),
+        Buffer.from('test-key')
       );
-      
+
       return decrypted;
     } catch (error) {
       console.error('❌ Expected error in error test:', error);
@@ -97,20 +82,18 @@ export class KafkaController {
   }
 
   @MessagePattern('test.performance', Transport.KAFKA)
-  async handlePerformanceMessage(
-    @Payload() message: KafkaMessage,
-  ): Promise<any> {
+  async handlePerformanceMessage(@Payload() message: any): Promise<any> {
     try {
       // Quick processing for performance test
       const decrypted = await this.cryptoService.unboxRaw(
         message.value as any,
-        Buffer.from('test-key'),
+        Buffer.from('test-key')
       );
-      
+
       return decrypted;
     } catch (error) {
       console.error('❌ Error in performance test:', error);
       throw error;
     }
   }
-} 
+}

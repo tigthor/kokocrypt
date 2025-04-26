@@ -1,4 +1,11 @@
-import { DynamicModule, Global, Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import {
+  DynamicModule,
+  Global,
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CryptoService } from './core/crypto.service';
 import { ReplayGuard } from './core/replay.guard';
 import { DeriveSessionMiddleware } from './http/derive-session.middleware';
@@ -10,12 +17,13 @@ import { KeyProvider } from './providers/key-provider';
 
 @Global()
 @Module({
-  controllers: [HandshakeController]
+  controllers: [HandshakeController],
 })
 export class KokoEncryptionModule implements NestModule {
   static forRoot(opts?: { provider?: KeyProvider }): DynamicModule {
     const provider = opts?.provider ?? new EnvKeyProvider();
-    const crypto = new CryptoService(provider);
+    const configService = new ConfigService();
+    const crypto = new CryptoService(provider, configService);
 
     return {
       module: KokoEncryptionModule,
@@ -36,4 +44,4 @@ export class KokoEncryptionModule implements NestModule {
       .apply(DecryptMiddleware) // decrypt body thereafter
       .forRoutes('*');
   }
-} 
+}

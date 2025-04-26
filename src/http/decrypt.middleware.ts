@@ -13,7 +13,7 @@ export class DecryptMiddleware implements NestMiddleware {
 
   async use(req: Request, _res: Response, next: NextFunction) {
     const box = req.body ?? {};
-    
+
     if (!(box.iv && box.data && box.kid && box.ts)) {
       return next();
     }
@@ -24,20 +24,21 @@ export class DecryptMiddleware implements NestMiddleware {
 
     try {
       const session = SessionContext.get();
-      const key = session && session.kid === 'session'
-        ? session.rx
-        : await this.crypto.provider.getKey(box.kid);
+      const key =
+        session && session.kid === 'session'
+          ? session.rx
+          : await this.crypto.getKey(box.kid);
 
       if (!key) {
         throw new Error('key not found');
       }
 
-      const plain = this.crypto.unboxRaw(box, key);
-      req.body = JSON.parse(plain.toString('utf8'));
+      const plain = await this.crypto.unboxRaw(box, Buffer.from(key));
+      req.body = JSON.parse(plain.toString());
     } catch {
       // swallow for route guards to handle
     }
 
     next();
   }
-} 
+}

@@ -59,7 +59,7 @@ describe('HTTP Integration Tests', () => {
     );
     console.log('✓ Server session derived');
 
-    const { key: srv_key } = await provider.getCurrentKey();
+    const { key: srv_key } = await serverCrypto.getCurrentKey();
     const srv_pk = srv_key.subarray(32);
     const { sharedRx: clientRx, sharedTx: clientTx } =
       sodium.crypto_kx_client_session_keys(

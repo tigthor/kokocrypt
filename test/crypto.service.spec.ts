@@ -29,7 +29,7 @@ describe('CryptoService', () => {
   it('should encrypt and decrypt data', async () => {
     const data = Buffer.from('test data');
     const key = Buffer.alloc(sodiumNative.crypto_secretbox_KEYBYTES);
-    const { key: currentKey } = await provider.getCurrentKey();
+    const { key: currentKey } = await crypto.getCurrentKey();
     currentKey.copy(key, 0, 0, sodiumNative.crypto_secretbox_KEYBYTES);
 
     // Encrypt data
@@ -62,7 +62,7 @@ describe('CryptoService', () => {
       expect(serverSession.ts).toBe(ts);
 
       // Get client session keys
-      const { key: srv_key } = await provider.getCurrentKey();
+      const { key: srv_key } = await crypto.getCurrentKey();
       const srv_pk = srv_key.subarray(32);
       const { sharedRx: clientRx, sharedTx: clientTx } =
         sodium.crypto_kx_client_session_keys(

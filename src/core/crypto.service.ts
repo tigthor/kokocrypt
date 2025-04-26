@@ -86,4 +86,12 @@ export class CryptoService {
       ts,
     };
   }
+
+  async getCurrentKey() {
+    return this.provider.getCurrentKey();
+  }
+
+  async getKey(kid: string) {
+    return this.provider.getKey(kid);
+  }
 }
