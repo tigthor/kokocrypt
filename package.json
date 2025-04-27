@@ -26,7 +26,7 @@
     "name": "Kokomo Team"
   },
   "engines": {
-    "node": ">=16.0"
+    "node": ">=18.0"
   },
   "keywords": [
     "encryption",
