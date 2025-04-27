@@ -5,30 +5,46 @@ import sodium from 'libsodium-wrappers';
 import { KeyProvider } from '../providers/key-provider';
 import { AlgorithmType } from '../types/algorithm.type';
 
-const ntru = {
-};
+let ntru: any = null;
+let liboqs: any = null;
 
-const liboqs = {
-  init: async () => {},
-  KeyEncapsulation: class {
-    constructor(algorithm: string) {}
-    keypair() {
-      return {
-        public_key: Buffer.alloc(32),
-        secret_key: Buffer.alloc(32)
-      };
+try {
+  ntru = require('ntru');
+} catch (e) {
+  ntru = {
+    createKeyPair: () => {
+      throw new Error('NTRU package is not installed. Install it with npm install ntru');
+    },
+    encrypt: () => {
+      throw new Error('NTRU package is not installed. Install it with npm install ntru');
+    },
+    decrypt: () => {
+      throw new Error('NTRU package is not installed. Install it with npm install ntru');
     }
-    encapsulate(publicKey: Buffer) {
-      return {
-        ciphertext: Buffer.alloc(32),
-        shared_secret: Buffer.alloc(32)
-      };
+  };
+}
+
+try {
+  liboqs = require('liboqs-node');
+} catch (e) {
+  liboqs = {
+    init: async () => {},
+    KeyEncapsulation: class {
+      constructor(algorithm: string) {
+        throw new Error('liboqs-node package is not installed. Install it with npm install liboqs-node');
+      }
+      keypair() {
+        throw new Error('liboqs-node package is not installed. Install it with npm install liboqs-node');
+      }
+      encapsulate(publicKey: Buffer) {
+        throw new Error('liboqs-node package is not installed. Install it with npm install liboqs-node');
+      }
+      decapsulate(ciphertext: Buffer, privateKey: Buffer) {
+        throw new Error('liboqs-node package is not installed. Install it with npm install liboqs-node');
+      }
     }
-    decapsulate(ciphertext: Buffer, privateKey: Buffer) {
-      return Buffer.alloc(32);
-    }
-  }
-};
+  };
+}
 
 @Injectable()
 export class CryptoService {
