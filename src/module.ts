@@ -13,6 +13,7 @@ import { DecryptMiddleware } from './http/decrypt.middleware';
 import { EncryptInterceptor } from './http/encrypt.interceptor';
 import { HandshakeController } from './http/handshake.controller';
 import { EnvKeyProvider } from './providers/env.provider';
+import { EnhancedEnvKeyProvider } from './providers/enhanced-env.provider';
 import { KeyProvider } from './providers/key-provider';
 
 @Global()
@@ -20,8 +21,8 @@ import { KeyProvider } from './providers/key-provider';
   controllers: [HandshakeController],
 })
 export class KokoEncryptionModule implements NestModule {
-  static forRoot(opts?: { provider?: KeyProvider }): DynamicModule {
-    const provider = opts?.provider ?? new EnvKeyProvider();
+  static forRoot(opts?: { provider?: KeyProvider, enhanced?: boolean }): DynamicModule {
+    const provider = opts?.provider ?? (opts?.enhanced ? new EnhancedEnvKeyProvider() : new EnvKeyProvider());
     const configService = new ConfigService();
     const crypto = new CryptoService(provider, configService);
 

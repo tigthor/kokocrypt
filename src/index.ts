@@ -1,6 +1,7 @@
 export * from './module';
 export * from './providers/key-provider';
 export * from './providers/env.provider';
+export * from './providers/enhanced-env.provider';
 export * from './core/crypto.service';
 export * from './core/session.context';
 export * from './core/replay.guard';
@@ -8,3 +9,5 @@ export * from './http/handshake.controller';
 export * from './http/derive-session.middleware';
 export * from './http/decrypt.middleware';
 export * from './http/encrypt.interceptor';
+export * from './types/algorithm.type';
+export * from './browser';

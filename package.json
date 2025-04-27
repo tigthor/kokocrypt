@@ -1,7 +1,7 @@
 {
-  "name": "@kokomo/koko-encryption",
+  "name": "@kokomo/koko-encryption-enhanced",
   "version": "1.0.0",
-  "description": "Fortress Edition - Secure, audited, battle-ready encryption package",
+  "description": "Enhanced Fortress Edition - Secure, quantum-resistant, high-performance encryption package",
   "main": "./lib/index.js",
   "files": [
     "lib/**/*"
@@ -44,7 +44,9 @@
     "kafkajs": "^2.2.4",
     "libsodium-wrappers": "^0.7.13",
     "rxjs": "^7.8.1",
-    "sodium-native": "^5.0.1"
+    "sodium-native": "^5.0.1",
+    "ntru": "^5.2.0",
+    "liboqs-node": "^0.2.0"
   },
   "devDependencies": {
     "@nestjs/common": "^11.1.0",
