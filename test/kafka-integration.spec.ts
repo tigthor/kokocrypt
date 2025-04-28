@@ -25,11 +25,20 @@ class TestKeyProvider extends KeyProvider {
     'utf8'
   );
   private readonly testKid: string = 'test-kid-1';
+  private keys: Map<string, Buffer> = new Map();
+
+  constructor() {
+    super();
+    this.keys.set(this.testKid, this.testKey);
+  }
 
   async getCurrentKey(): Promise<KeyResult> {
     return {
       key: this.testKey,
       kid: this.testKid,
+      algorithm: 'XChaCha20-Poly1305',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
     };
   }
 
@@ -37,7 +46,29 @@ class TestKeyProvider extends KeyProvider {
     if (kid === this.testKid) {
       return this.testKey;
     }
-    return null;
+    return this.keys.get(kid) || null;
+  }
+
+  async rotateKeys(): Promise<void> {
+    const newKid = `test-kid-${Date.now()}`;
+    const newKey = Buffer.from(
+      `test-key-${Date.now()}-padding-123456789`,
+      'utf8'
+    );
+    this.keys.set(newKid, newKey);
+  }
+
+  async storeKey(key: Buffer, algorithm: string, expiresAt?: number): Promise<KeyResult> {
+    const kid = `custom-${Date.now()}`;
+    this.keys.set(kid, key);
+    
+    return {
+      key,
+      kid,
+      algorithm,
+      createdAt: Date.now(),
+      expiresAt: expiresAt || Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+    };
   }
 }
 

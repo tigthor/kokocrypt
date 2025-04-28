@@ -1,7 +1,7 @@
 {
-  "name": "@kokomo/koko-encryption",
+  "name": "@kokomo/koko-encryption-enhanced",
   "version": "1.0.0",
-  "description": "Fortress Edition - Secure, audited, battle-ready encryption package",
+  "description": "Enhanced Fortress Edition - Secure, quantum-resistant, high-performance encryption package",
   "main": "./lib/index.js",
   "files": [
     "lib/**/*"
@@ -26,7 +26,7 @@
     "name": "Kokomo Team"
   },
   "engines": {
-    "node": ">=16.0"
+    "node": ">=18.0"
   },
   "keywords": [
     "encryption",
