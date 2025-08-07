@@ -1,6 +1,6 @@
-# KokoCrypt Enhanced
+# @tigthor/kokocrypt
 
-A robust, quantum-resistant encryption layer for Node.js, NestJS, Kafka, and browser clients. Works in traditional Node servers and is easy to adopt in Next.js (Node runtime) for API routes and server components.
+Robust, quantum-resistant encryption for Node.js, NestJS, Kafka, and browser clients. Works in traditional Node servers and is easy to adopt in Next.js (Node runtime) for API routes and server components.
 
 ## Features
 
@@ -18,7 +18,7 @@ A robust, quantum-resistant encryption layer for Node.js, NestJS, Kafka, and bro
 ## Installation
 
 ```bash
-npm install @kokomo/koko-encryption-enhanced
+npm install @tigthor/kokocrypt
 ```
 
 ## Usage
@@ -26,20 +26,20 @@ npm install @kokomo/koko-encryption-enhanced
 ### Import map
 
 - CommonJS:
-  - Core: `const { CryptoService } = require('@kokomo/koko-encryption-enhanced')`
-  - Browser: `const { BrowserCryptoService } = require('@kokomo/koko-encryption-enhanced/browser')`
-  - Kafka: `const { KafkaService } = require('@kokomo/koko-encryption-enhanced/kafka')`
+  - Core: `const { CryptoService } = require('@tigthor/kokocrypt')`
+  - Browser: `const { BrowserCryptoService } = require('@tigthor/kokocrypt/browser')`
+  - Kafka: `const { KafkaService, EnhancedKafkaService } = require('@tigthor/kokocrypt/kafka')`
 - ESM/TypeScript:
-  - Core: `import { CryptoService } from '@kokomo/koko-encryption-enhanced'`
-  - Browser: `import { BrowserCryptoService } from '@kokomo/koko-encryption-enhanced/browser'`
-  - Kafka: `import { KafkaService } from '@kokomo/koko-encryption-enhanced/kafka'`
+  - Core: `import { CryptoService } from '@tigthor/kokocrypt'`
+  - Browser: `import { BrowserCryptoService } from '@tigthor/kokocrypt/browser'`
+  - Kafka: `import { KafkaService, EnhancedKafkaService } from '@tigthor/kokocrypt/kafka'`
 
 ### Server-side (NestJS)
 
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { KokoEncryptionModule } from '@kokomo/koko-encryption-enhanced';
+import { KokoEncryptionModule } from '@tigthor/kokocrypt';
 
 @Module({
   imports: [
@@ -58,7 +58,7 @@ The middleware will be automatically configured by the KokoEncryptionModule:
 ### Client-side (Browser)
 
 ```typescript
-import { BrowserCryptoService } from '@kokomo/koko-encryption-enhanced/browser';
+import { BrowserCryptoService } from '@tigthor/kokocrypt/browser';
 
 async function setupEncryption() {
   const crypto = new BrowserCryptoService();
@@ -95,7 +95,7 @@ async function setupEncryption() {
 ```ts
 import express from 'express';
 import bodyParser from 'body-parser';
-import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { CryptoService, EnvKeyProvider } from '@tigthor/kokocrypt';
 import { ConfigService } from '@nestjs/config';
 
 // Env must expose a 64-byte base64 key: private(32) + public(32)
@@ -129,7 +129,7 @@ Important: Use the Node.js runtime for API routes that rely on native crypto (`s
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { CryptoService, EnvKeyProvider } from '@tigthor/kokocrypt';
 import { ConfigService } from '@nestjs/config';
 
 const crypto = new CryptoService(new EnvKeyProvider(), new ConfigService());
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 // pages/api/secure.ts
 export const config = { runtime: 'nodejs' };
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { CryptoService, EnvKeyProvider } from '@tigthor/kokocrypt';
 import { ConfigService } from '@nestjs/config';
 
 const crypto = new CryptoService(new EnvKeyProvider(), new ConfigService());
@@ -184,7 +184,7 @@ Use the browser build under the `browser` subpath. Handshake with your API route
 
 ```ts
 // Any client component
-import { BrowserCryptoService } from '@kokomo/koko-encryption-enhanced/browser';
+import { BrowserCryptoService } from '@tigthor/kokocrypt/browser';
 
 export async function useKoko() {
   const crypto = new BrowserCryptoService();
@@ -202,8 +202,8 @@ export async function useKoko() {
 ### Kafka Messaging
 
 ```typescript
-import { EnhancedKafkaService } from '@kokomo/koko-encryption-enhanced/kafka';
-import { CryptoService } from '@kokomo/koko-encryption-enhanced';
+import { KafkaService, EnhancedKafkaService } from '@tigthor/kokocrypt/kafka';
+import { CryptoService } from '@tigthor/kokocrypt';
 
 // In your module
 @Module({
@@ -233,6 +233,14 @@ export class MyService {
   async receiveEncryptedMessage(encryptedMessage: Buffer) {
     const { key } = await this.cryptoService.getCurrentKey();
     return this.kafkaService.decryptKafkaMessage(encryptedMessage, key);
+  }
+
+  // Alternatively, use the high-level KafkaService to send JSON directly
+  async sendJson(topic: string, payload: Record<string, unknown>) {
+    const { key } = await this.cryptoService.getCurrentKey();
+    // Use only the first 32 bytes for symmetric secretbox
+    const sk = key.subarray(0, 32);
+    return this.kafkaCore.sendMessage<{ success: boolean }>(topic, payload, sk);
   }
 }
 ```
