@@ -1,6 +1,6 @@
 # KokoCrypt Enhanced
 
-A robust, quantum-resistant encryption layer for Node.js applications with specific support for HTTP APIs and Kafka messaging.
+A robust, quantum-resistant encryption layer for Node.js, NestJS, Kafka, and browser clients. Works in traditional Node servers and is easy to adopt in Next.js (Node runtime) for API routes and server components.
 
 ## Features
 
@@ -22,6 +22,17 @@ npm install @kokomo/koko-encryption-enhanced
 ```
 
 ## Usage
+
+### Import map
+
+- CommonJS:
+  - Core: `const { CryptoService } = require('@kokomo/koko-encryption-enhanced')`
+  - Browser: `const { BrowserCryptoService } = require('@kokomo/koko-encryption-enhanced/browser')`
+  - Kafka: `const { KafkaService } = require('@kokomo/koko-encryption-enhanced/kafka')`
+- ESM/TypeScript:
+  - Core: `import { CryptoService } from '@kokomo/koko-encryption-enhanced'`
+  - Browser: `import { BrowserCryptoService } from '@kokomo/koko-encryption-enhanced/browser'`
+  - Kafka: `import { KafkaService } from '@kokomo/koko-encryption-enhanced/kafka'`
 
 ### Server-side (NestJS)
 
@@ -79,6 +90,115 @@ async function setupEncryption() {
 }
 ```
 
+### Node/Express
+
+```ts
+import express from 'express';
+import bodyParser from 'body-parser';
+import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { ConfigService } from '@nestjs/config';
+
+// Env must expose a 64-byte base64 key: private(32) + public(32)
+// process.env.KOKO_ENCRYPTION_KEY = base64(private||public)
+
+const app = express();
+app.use(bodyParser.json());
+
+const crypto = new CryptoService(new EnvKeyProvider(), new ConfigService());
+await crypto.ready();
+
+app.post('/secure', async (req, res) => {
+  try {
+    const { data } = req.body;
+    const { key } = await crypto.getCurrentKey();
+    const decrypted = await crypto.unboxRaw(Buffer.from(data, 'base64'), key.subarray(0, 32));
+    const response = await crypto.boxRaw(Buffer.from(JSON.stringify({ ok: true })), key.subarray(0, 32));
+    res.json({ data: response.toString('base64') });
+  } catch {
+    res.status(400).json({ error: 'Decryption failed' });
+  }
+});
+```
+
+### Next.js (App Router) — API Route on Node runtime
+
+Important: Use the Node.js runtime for API routes that rely on native crypto (`sodium-native`). Edge runtime is not supported for server-side encryption.
+
+```ts
+// app/api/secure/route.ts
+export const runtime = 'nodejs';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { ConfigService } from '@nestjs/config';
+
+const crypto = new CryptoService(new EnvKeyProvider(), new ConfigService());
+
+export async function POST(req: NextRequest) {
+  await crypto.ready();
+  const body = await req.json();
+  const { key } = await crypto.getCurrentKey();
+  const sk = key.subarray(0, 32);
+
+  try {
+    const decrypted = await crypto.unboxRaw(Buffer.from(body.data, 'base64'), sk);
+    const result = JSON.parse(decrypted.toString());
+    const response = await crypto.boxRaw(Buffer.from(JSON.stringify({ ok: true, result })), sk);
+    return NextResponse.json({ data: response.toString('base64') });
+  } catch {
+    return NextResponse.json({ error: 'Decryption failed' }, { status: 400 });
+  }
+}
+```
+
+### Next.js (Pages Router) — API Route on Node runtime
+
+```ts
+// pages/api/secure.ts
+export const config = { runtime: 'nodejs' };
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { CryptoService, EnvKeyProvider } from '@kokomo/koko-encryption-enhanced';
+import { ConfigService } from '@nestjs/config';
+
+const crypto = new CryptoService(new EnvKeyProvider(), new ConfigService());
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await crypto.ready();
+  if (req.method !== 'POST') return res.status(405).end();
+  try {
+    const { key } = await crypto.getCurrentKey();
+    const sk = key.subarray(0, 32);
+    const decrypted = await crypto.unboxRaw(Buffer.from(req.body.data, 'base64'), sk);
+    const payload = JSON.parse(decrypted.toString());
+    const encrypted = await crypto.boxRaw(Buffer.from(JSON.stringify({ ok: true, payload })), sk);
+    res.status(200).json({ data: encrypted.toString('base64') });
+  } catch {
+    res.status(400).json({ error: 'Decryption failed' });
+  }
+}
+```
+
+### Next.js Client (Browser)
+
+Use the browser build under the `browser` subpath. Handshake with your API route that exposes `/.well-known/koko-enc-key`.
+
+```ts
+// Any client component
+import { BrowserCryptoService } from '@kokomo/koko-encryption-enhanced/browser';
+
+export async function useKoko() {
+  const crypto = new BrowserCryptoService();
+  await crypto.ready();
+  const keys = await crypto.generateKeys();
+
+  const r = await fetch('/.well-known/koko-enc-key');
+  const { pub } = await r.json();
+
+  const session = await crypto.serverHandshake(pub);
+  return { crypto, keys, session };
+}
+```
+
 ### Kafka Messaging
 
 ```typescript
@@ -119,7 +239,8 @@ export class MyService {
 
 ## Environment Variables
 
-- `KOKOCRYPT_MASTER_KEY`: 64-byte master key (required)
+- `KOKOCRYPT_MASTER_KEY`: 64-byte master key for `EnhancedEnvKeyProvider` (required for enhanced mode)
+- `KOKO_ENCRYPTION_KEY`: 64-byte base64 key (private(32) + public(32)) for `EnvKeyProvider`
 
 ## Security Features
 
@@ -162,6 +283,12 @@ This library is designed to work seamlessly with the Kokomo Backend microservice
 
 See the [kokomo-backend-integration.ts](./examples/kokomo-backend-integration.ts) file for a complete example of integrating with Kokomo Backend.
 
+## Runtime notes for Next.js
+
+- Server-side encryption/decryption must run on the Node.js runtime due to `sodium-native`.
+- Avoid Next.js Edge runtime for server encryption. Client-side usage is fully browser compatible via `libsodium-wrappers`.
+- If you must use Edge, restrict to client-side operations or proxy to a Node API route.
+
 ## Development
 
 - Run tests: `npm test`
@@ -190,4 +317,3 @@ MIT
 ---
 
 Original Repository: [https://github.com/tigthor/kokocrypt](https://github.com/tigthor/kokocrypt)
-Enhanced Fork: [https://github.com/tigthor/kokocrypt-fork](https://github.com/tigthor/kokocrypt-fork)

@@ -7,6 +7,7 @@ import {
 import { map, from } from 'rxjs';
 import { CryptoService } from '../core/crypto.service';
 import { SessionContext } from '../core/session.context';
+import { toWireBox } from './wire.util';
 
 @Injectable()
 export class EncryptInterceptor implements NestInterceptor {
@@ -19,11 +20,17 @@ export class EncryptInterceptor implements NestInterceptor {
         const session = SessionContext.get();
 
         if (session) {
-          return this.crypto.boxRaw(buf, Buffer.from(session.tx));
+          const combined = await this.crypto.boxRaw(
+            buf,
+            Buffer.from(session.tx)
+          );
+          return toWireBox(combined, 'session', session.ts);
         }
 
         const { key, kid } = await this.crypto.getCurrentKey();
-        return this.crypto.boxRaw(buf, key);
+        const ts = Date.now();
+        const combined = await this.crypto.boxRaw(buf, key.subarray(0, 32));
+        return toWireBox(combined, kid, ts);
       }),
       from
     );

@@ -9,5 +9,8 @@ export * from './http/handshake.controller';
 export * from './http/derive-session.middleware';
 export * from './http/decrypt.middleware';
 export * from './http/encrypt.interceptor';
+export * from './http/wire.util';
+export * from './http/headers.util';
+export * from './http/express-compose';
 export * from './types/algorithm.type';
 export * from './browser';

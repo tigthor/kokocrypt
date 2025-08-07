@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 import { CryptoService } from '../core/crypto.service';
 import { SessionContext } from '../core/session.context';
 import { ReplayGuard } from '../core/replay.guard';
+import { fromWireBox, isWireBox } from './wire.util';
+import * as sodiumNative from 'sodium-native';
 
 @Injectable()
 export class DecryptMiddleware implements NestMiddleware {
@@ -13,8 +15,7 @@ export class DecryptMiddleware implements NestMiddleware {
 
   async use(req: Request, _res: Response, next: NextFunction) {
     const box = req.body ?? {};
-
-    if (!(box.iv && box.data && box.kid && box.ts)) {
+    if (!isWireBox(box)) {
       return next();
     }
 
@@ -33,7 +34,12 @@ export class DecryptMiddleware implements NestMiddleware {
         throw new Error('key not found');
       }
 
-      const plain = await this.crypto.unboxRaw(box, Buffer.from(key));
+      const combined = fromWireBox(box);
+      const secretKey = Buffer.from(key).subarray(
+        0,
+        sodiumNative.crypto_secretbox_KEYBYTES
+      );
+      const plain = await this.crypto.unboxRaw(combined, secretKey);
       req.body = JSON.parse(plain.toString());
     } catch {
       // swallow for route guards to handle
