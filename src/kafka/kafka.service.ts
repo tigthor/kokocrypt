@@ -21,6 +21,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     'test.errors',
     'test.performance',
   ];
+  private readonly isTestEnv: boolean =
+    process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID;
+
+  private logError(message: string, error?: unknown): void {
+    if (this.isTestEnv) {
+      this.logger.debug(message, error as any);
+      return;
+    }
+    this.logger.error(message, error as any);
+  }
 
   constructor(
     private readonly cryptoService: CryptoService,
@@ -40,7 +50,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         `✓ Subscribed to response topics: ${this.topics.join(', ')}`
       );
     } catch (error) {
-      this.logger.error('❌ Failed to initialize Kafka service:', error);
+      this.logError('❌ Failed to initialize Kafka service:', error);
       throw new ServiceUnavailableException(
         'Failed to connect to Kafka service'
       );
@@ -52,11 +62,15 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       await this.client.close();
       this.logger.log('✓ Disconnected from Kafka');
     } catch (error) {
-      this.logger.error('❌ Error disconnecting from Kafka:', error);
+      this.logError('❌ Error disconnecting from Kafka:', error);
     }
   }
 
-  async sendMessage(topic: string, message: any, key: Buffer) {
+  async sendMessage<T = unknown>(
+    topic: string,
+    message: unknown,
+    key: Buffer
+  ): Promise<T> {
     try {
       // Validate key length
       if (key.length !== sodiumNative.crypto_secretbox_KEYBYTES) {
@@ -78,18 +92,18 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         key
       );
 
-      const response = await firstValueFrom(
-        this.client.send(topic, {
+      const response = (await firstValueFrom(
+        this.client.send<T>(topic, {
           value: encryptedMessage.toString('base64'),
           timestamp: Date.now().toString(),
         })
-      );
+      )) as T;
 
       this.logger.debug(`✓ Message sent to topic ${topic}`);
       return response;
     } catch (err: unknown) {
       const error = err as Error;
-      this.logger.error(`❌ Error sending message to ${topic}:`, error);
+      this.logError(`❌ Error sending message to ${topic}:`, error);
 
       if (error instanceof BadRequestException) {
         throw error;
@@ -107,7 +121,11 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendBatch(topic: string, messages: any[], key: Buffer) {
+  async sendBatch<T = unknown>(
+    topic: string,
+    messages: unknown[],
+    key: Buffer
+  ): Promise<T[]> {
     try {
       // Validate key length
       if (key.length !== sodiumNative.crypto_secretbox_KEYBYTES) {
@@ -143,17 +161,17 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       );
 
       // Send all messages
-      const responses = await Promise.all(
+      const responses = (await Promise.all(
         encryptedMessages.map(msg =>
-          firstValueFrom(this.client.send(topic, msg))
+          firstValueFrom(this.client.send<T>(topic, msg))
         )
-      );
+      )) as T[];
 
       this.logger.debug(`✓ Batch sent to topic ${topic}`);
       return responses;
     } catch (err: unknown) {
       const error = err as Error;
-      this.logger.error(`❌ Error sending batch to ${topic}:`, error);
+      this.logError(`❌ Error sending batch to ${topic}:`, error);
 
       if (error instanceof BadRequestException) {
         throw error;
@@ -167,26 +185,29 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendInvalidMessage() {
+  async sendInvalidMessage<T = unknown>(): Promise<T> {
     try {
       this.logger.debug('📤 Sending invalid message for error testing');
 
       // Send an intentionally invalid message
-      const response = await firstValueFrom(
-        this.client.send('test.errors', {
+      const response = (await firstValueFrom(
+        this.client.send<T>('test.errors', {
           value: 'invalid_data',
           timestamp: Date.now().toString(),
         })
-      );
+      )) as T;
 
       return response;
     } catch (error) {
-      this.logger.error('❌ Expected error sending invalid message:', error);
+      this.logError('❌ Expected error sending invalid message:', error);
       throw error; // We want to propagate this error as it's expected in tests
     }
   }
 
-  async runPerformanceTest(messageCount: number, key: Buffer) {
+  async runPerformanceTest<T = unknown>(
+    messageCount: number,
+    key: Buffer
+  ): Promise<T[]> {
     try {
       // Validate key length
       if (key.length !== sodiumNative.crypto_secretbox_KEYBYTES) {
@@ -210,11 +231,11 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         timestamp: Date.now(),
       }));
 
-      const responses = await Promise.all(
+      const responses = (await Promise.all(
         messages.map(message =>
-          this.sendMessage('test.performance', message, key)
+          this.sendMessage<T>('test.performance', message, key)
         )
-      );
+      )) as T[];
 
       const endTime = Date.now();
       const duration = (endTime - startTime) / 1000; // Convert to seconds
@@ -228,7 +249,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       return responses;
     } catch (err: unknown) {
       const error = err as Error;
-      this.logger.error('❌ Error in performance test:', error);
+      this.logError('❌ Error in performance test:', error);
 
       if (error instanceof BadRequestException) {
         throw error;
