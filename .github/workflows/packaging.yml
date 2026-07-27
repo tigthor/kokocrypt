@@ -1,0 +1,52 @@
+name: packaging
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# 1.0.1 shipped broken: @nestjs/common, @nestjs/config and @nestjs/microservices
+# were imported by dist/ but only listed in devDependencies, so `require` of the
+# published package threw MODULE_NOT_FOUND. every unit test passed, because they
+# all ran inside this repo where the dev tree is installed.
+#
+# the only test that catches that is installing the tarball somewhere else.
+jobs:
+  install-from-tarball:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm pack --pack-destination /tmp
+
+      - name: require the package from a clean project
+        run: |
+          mkdir /tmp/consumer && cd /tmp/consumer
+          npm init -y
+          npm i /tmp/tigthor-kokocrypt-*.tgz \
+                @nestjs/common@^11 @nestjs/config@^4 rxjs@^7
+          node -e "
+            const k = require('@tigthor/kokocrypt');
+            if (!k.CryptoService) throw new Error('CryptoService missing from the published package');
+            const b = require('@tigthor/kokocrypt/browser');
+            if (!b.BrowserCryptoService) throw new Error('browser entry point is broken');
+            console.log('core and browser entry points load');
+          "
+
+      - name: the kafka entry point needs its optional peers
+        run: |
+          cd /tmp/consumer
+          npm i @nestjs/microservices@^11 @nestjs/event-emitter@^3 kafkajs@^2
+          node -e "
+            const k = require('@tigthor/kokocrypt/kafka');
+            if (Object.keys(k).length === 0) throw new Error('kafka entry point is empty');
+            console.log('kafka entry point loads');
+          "
+
+      - name: nothing in dependencies may carry a known advisory
+        run: npm audit --omit=dev --audit-level=moderate

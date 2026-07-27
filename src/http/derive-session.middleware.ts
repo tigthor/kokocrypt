@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { CryptoService } from '../core/crypto.service';
 import { SessionContext } from '../core/session.context';
 
@@ -25,4 +25,4 @@ export class DeriveSessionMiddleware implements NestMiddleware {
       next();
     }
   }
-} 
+}
