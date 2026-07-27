@@ -307,8 +307,14 @@ export class CryptoService {
           }
 
           results[index] = message;
-        } catch {
-          results[index] = Buffer.from('');
+        } catch (e) {
+          // this used to swallow the failure and put an empty buffer in the
+          // result. a caller looping over the batch could not tell a genuinely
+          // empty message from one that failed its authentication tag, so a
+          // tampered entry became silent data loss instead of an error
+          throw new Error(
+            `batchDecrypt failed for message ${index}: ${(e as Error).message}`
+          );
         }
       })
     );

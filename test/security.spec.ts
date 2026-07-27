@@ -234,3 +234,38 @@ describe('EnhancedEnvKeyProvider', () => {
     expect(key.key.length).toBe(64);
   });
 });
+
+describe('batch decrypt reports failures', () => {
+  let svc: CryptoService;
+
+  beforeEach(() => {
+    svc = new CryptoService(new StubProvider(KEY), configStub);
+  });
+
+  it('throws on a tampered entry rather than returning an empty buffer', async () => {
+    const msgs = ['one', 'two', 'three'].map(s => Buffer.from(s));
+    const boxes = await svc.batchEncrypt(msgs, KEY);
+    boxes[1][boxes[1].length - 1] ^= 0xff;
+
+    // silently returning Buffer.from('') here made a tampered message
+    // indistinguishable from a legitimately empty one
+    await expect(svc.batchDecrypt(boxes, KEY)).rejects.toThrow(/message 1/);
+  });
+
+  it('throws on the wrong key', async () => {
+    const boxes = await svc.batchEncrypt([Buffer.from('x')], KEY);
+    await expect(
+      svc.batchDecrypt(boxes, Buffer.alloc(32, 2))
+    ).rejects.toThrow();
+  });
+
+  it('still distinguishes a genuinely empty message', async () => {
+    const boxes = await svc.batchEncrypt(
+      [Buffer.from(''), Buffer.from('x')],
+      KEY
+    );
+    const back = await svc.batchDecrypt(boxes, KEY);
+    expect(back[0].length).toBe(0);
+    expect(back[1].toString()).toBe('x');
+  });
+});
