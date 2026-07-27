@@ -26,11 +26,21 @@ export function buildKokoHeaders(
   return headers;
 }
 
-export function verifyKokoHeaders(
+/** constant time, so a signature cannot be guessed a byte at a time */
+function sameSignature(expected: string, given: unknown): boolean {
+  if (typeof given !== 'string') return false;
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(given, 'utf8');
+  // the length is not secret, and timingSafeEqual throws when they differ
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+export async function verifyKokoHeaders(
   headers: Record<string, any>,
   replayGuard: ReplayGuard,
   hmacSecret?: string
-): boolean {
+): Promise<boolean> {
   const epk = headers['x-client-epk'];
   const tsRaw = headers['x-client-ts'];
   const sig = headers['x-client-sig'];
@@ -42,9 +52,12 @@ export function verifyKokoHeaders(
       .createHmac('sha256', hmacSecret)
       .update(`${ts}.${epk}`)
       .digest('base64');
-    if (expected !== sig) return false;
+    // this used to be `expected !== sig`, which leaks how much of the
+    // signature was correct through how long the comparison ran
+    if (!sameSignature(expected, sig)) return false;
   }
 
-  // Use EPK as a nonce token for replay guard window check
-  return replayGuard.check(ts, String(epk));
+  // the ephemeral public key doubles as the replay nonce. awaited because the
+  // store may live in redis rather than this process
+  return await replayGuard.check(ts, String(epk));
 }

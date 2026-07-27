@@ -3,6 +3,8 @@ export * from './providers/key-provider';
 export * from './providers/env.provider';
 export * from './providers/enhanced-env.provider';
 export * from './core/crypto.service';
+export * from './core/secure-session';
+export * from './core/keypair';
 export * from './core/session.context';
 export * from './core/replay.guard';
 export * from './http/handshake.controller';

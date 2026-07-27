@@ -10,8 +10,8 @@ module.exports = {
       },
     ],
   },
-  collectCoverageFrom: ['**/*.(t|j)s'],
-  coverageDirectory: '../coverage',
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+  coverageDirectory: 'coverage',
   testEnvironment: 'node',
   setupFiles: ['<rootDir>/test/setup.ts'],
 };

@@ -58,7 +58,9 @@ describe('CryptoService', () => {
       expect(serverSession.tx).toBeInstanceOf(Buffer);
       expect(serverSession.rx.length).toBe(32);
       expect(serverSession.tx.length).toBe(32);
-      expect(serverSession.kid).toBe('session');
+      // the kid names the key that derived this session, so rotation can find it
+      expect(typeof serverSession.kid).toBe('string');
+      expect(serverSession.kid.length).toBeGreaterThan(0);
       expect(serverSession.ts).toBe(ts);
 
       // Get client session keys

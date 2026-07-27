@@ -216,7 +216,9 @@ describe('Enhanced CryptoService', () => {
       expect(session).toBeDefined();
       expect(session.rx).toBeInstanceOf(Buffer);
       expect(session.tx).toBeInstanceOf(Buffer);
-      expect(session.kid).toBe('session');
+      // the kid names the key that derived this session, so rotation can find it
+      expect(typeof session.kid).toBe('string');
+      expect(session.kid.length).toBeGreaterThan(0);
       expect(session.ts).toBe(timestamp);
     });
   });

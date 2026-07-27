@@ -98,15 +98,37 @@ export class CryptoService {
     return message;
   }
 
+  /**
+   * derive the per session keys from the server long term keypair and the
+   * client public key.
+   *
+   * this used to call crypto_kx_keypair(pk, sk) first. that generates a new
+   * keypair *into* those buffers, and they are subarray views of the
+   * provider's key, so every handshake overwrote the master key in place with
+   * random bytes. the server never kept a stable identity, the public key
+   * published at /.well-known/koko-enc-key was stale the moment anything else
+   * ran, and data encrypted under the previous key became unrecoverable.
+   */
   async deriveSession(clientPublicKey: Buffer, ts: number) {
-    const { key: serverKey } = await this.provider.getCurrentKey();
+    if (clientPublicKey.length !== sodiumNative.crypto_kx_PUBLICKEYBYTES) {
+      throw new Error(
+        `client public key must be ${sodiumNative.crypto_kx_PUBLICKEYBYTES} bytes, got ${clientPublicKey.length}`
+      );
+    }
+
+    const { key: serverKey, kid } = await this.provider.getCurrentKey();
+    if (serverKey.length !== 64) {
+      throw new Error(
+        `server key must be 64 bytes (secret||public), got ${serverKey.length}`
+      );
+    }
+
     const serverPrivateKey = serverKey.subarray(0, 32);
     const serverPublicKey = serverKey.subarray(32);
 
-    const rx = Buffer.allocUnsafe(32);
-    const tx = Buffer.allocUnsafe(32);
+    const rx = Buffer.allocUnsafe(sodiumNative.crypto_kx_SESSIONKEYBYTES);
+    const tx = Buffer.allocUnsafe(sodiumNative.crypto_kx_SESSIONKEYBYTES);
 
-    sodiumNative.crypto_kx_keypair(serverPublicKey, serverPrivateKey);
     sodiumNative.crypto_kx_server_session_keys(
       rx,
       tx,
@@ -115,12 +137,7 @@ export class CryptoService {
       clientPublicKey
     );
 
-    return {
-      rx,
-      tx,
-      kid: 'session',
-      ts,
-    };
+    return { rx, tx, kid, ts };
   }
 
   async getCurrentKey() {
