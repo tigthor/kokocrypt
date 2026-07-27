@@ -6,11 +6,12 @@ module.exports = {
     '^.+\\.(t|j)s$': [
       'ts-jest',
       {
-        tsconfig: 'tsconfig.json',
+        tsconfig: 'tsconfig.eslint.json',
       },
     ],
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/test/setup.ts'],
 };

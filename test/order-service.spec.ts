@@ -4,20 +4,20 @@ import { CryptoService } from '../src/core/crypto.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { of, firstValueFrom } from 'rxjs';
-import { KeyProvider, KeyResult } from '../src/providers/key-provider';
+import { KeyProvider } from '../src/providers/key-provider';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 class OrderService {
   constructor(
-    private readonly cryptoService: CryptoService,
+    private readonly _cryptoService: CryptoService,
     private readonly client: ClientKafka
   ) {}
 
   async createOrder(order: any) {
     const orderBuffer = Buffer.from(JSON.stringify(order));
-    const { key } = await this.cryptoService.ready();
-    const encryptedOrder = await this.cryptoService.boxRaw(orderBuffer, key);
+    const { key } = await this._cryptoService.ready();
+    const encryptedOrder = await this._cryptoService.boxRaw(orderBuffer, key);
 
     return this.client.send('orders.created', {
       value: encryptedOrder.toString('base64'),
@@ -29,7 +29,7 @@ class OrderService {
 describe('Order Service Integration', () => {
   let module: TestingModule;
   let orderService: OrderService;
-  let cryptoService: CryptoService;
+  let _cryptoService: CryptoService;
   let mockClientKafka: jest.Mocked<ClientKafka>;
   let testKey: Buffer;
 
@@ -57,7 +57,7 @@ describe('Order Service Integration', () => {
       ready: jest.fn().mockResolvedValue(undefined),
       getCurrentKey: jest
         .fn()
-        .mockResolvedValue({ key: testKey, kid: 'test-key-1' } as KeyResult),
+        .mockResolvedValue({ key: testKey, kid: 'test-key-1' }),
       getKey: jest
         .fn()
         .mockImplementation((kid: string) =>
@@ -91,7 +91,7 @@ describe('Order Service Integration', () => {
     }).compile();
 
     orderService = module.get<OrderService>(OrderService);
-    cryptoService = module.get<CryptoService>(CryptoService);
+    _cryptoService = module.get<CryptoService>(CryptoService);
   });
 
   beforeEach(() => {

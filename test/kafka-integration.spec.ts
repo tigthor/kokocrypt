@@ -8,7 +8,7 @@ import { of } from 'rxjs';
 import { KeyProvider, KeyResult } from '../src/providers/key-provider';
 import { EnvKeyProvider } from '../src/providers/env.provider';
 
-interface KafkaMessage {
+interface _KafkaMessage {
   topic: string;
   partition: number;
   message: {
@@ -58,10 +58,14 @@ class TestKeyProvider extends KeyProvider {
     this.keys.set(newKid, newKey);
   }
 
-  async storeKey(key: Buffer, algorithm: string, expiresAt?: number): Promise<KeyResult> {
+  async storeKey(
+    key: Buffer,
+    algorithm: string,
+    expiresAt?: number
+  ): Promise<KeyResult> {
     const kid = `custom-${Date.now()}`;
     this.keys.set(kid, key);
-    
+
     return {
       key,
       kid,
@@ -75,11 +79,11 @@ class TestKeyProvider extends KeyProvider {
 describe('Kafka Integration Tests', () => {
   let module: TestingModule;
   let kafkaService: KafkaService;
-  let cryptoService: CryptoService;
+  let _cryptoService: CryptoService;
   let testKey: Buffer;
   let mockClientKafka: jest.Mocked<ClientKafka>;
 
-  const mockConfigService = {
+  void {
     get: jest.fn((key: string) => {
       switch (key) {
         case 'ENCRYPTION_KEY':
@@ -118,7 +122,7 @@ describe('Kafka Integration Tests', () => {
     }).compile();
 
     kafkaService = module.get<KafkaService>(KafkaService);
-    cryptoService = module.get<CryptoService>(CryptoService);
+    _cryptoService = module.get<CryptoService>(CryptoService);
     testKey = randomBytes(32);
 
     // Initialize Kafka service
@@ -265,19 +269,21 @@ describe('Kafka Integration Tests', () => {
   });
 
   it('should throw on invalid messageCount in runPerformanceTest', async () => {
-    await expect(
-      kafkaService.runPerformanceTest(0, testKey)
-    ).rejects.toThrow('Invalid message count');
-    await expect(
-      kafkaService.runPerformanceTest(-1, testKey)
-    ).rejects.toThrow('Invalid message count');
-    await expect(
-      kafkaService.runPerformanceTest(1.5, testKey)
-    ).rejects.toThrow('Invalid message count');
+    await expect(kafkaService.runPerformanceTest(0, testKey)).rejects.toThrow(
+      'Invalid message count'
+    );
+    await expect(kafkaService.runPerformanceTest(-1, testKey)).rejects.toThrow(
+      'Invalid message count'
+    );
+    await expect(kafkaService.runPerformanceTest(1.5, testKey)).rejects.toThrow(
+      'Invalid message count'
+    );
   });
 
   it('should propagate unknown errors from client.send', async () => {
-    mockClientKafka.send.mockImplementationOnce(() => { throw new Error('some unknown error'); });
+    mockClientKafka.send.mockImplementationOnce(() => {
+      throw new Error('some unknown error');
+    });
     await expect(
       kafkaService.sendMessage('test.topic', { data: 'test' }, testKey)
     ).rejects.toThrow('some unknown error');

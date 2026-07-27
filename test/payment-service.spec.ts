@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CryptoService } from '../src/core/crypto.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { KeyProvider, KeyResult } from '../src/providers/key-provider';
+import { KeyProvider } from '../src/providers/key-provider';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -50,7 +50,7 @@ describe('Payment Service Integration', () => {
       ready: jest.fn().mockResolvedValue(undefined),
       getCurrentKey: jest
         .fn()
-        .mockResolvedValue({ key: testKey, kid: 'test-key-1' } as KeyResult),
+        .mockResolvedValue({ key: testKey, kid: 'test-key-1' }),
       getKey: jest
         .fn()
         .mockImplementation((kid: string) =>

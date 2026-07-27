@@ -98,7 +98,7 @@ describe('HTTP Integration Tests', () => {
           serverSession.tx
         );
         res.json({ data: encryptedResponse.toString('base64') });
-      } catch (error) {
+      } catch {
         res.status(400).json({ error: 'Decryption failed' });
       }
     });
@@ -116,7 +116,7 @@ describe('HTTP Integration Tests', () => {
           serverSession.rx
         );
         res.json({ message: 'Success: ' + decrypted.toString() });
-      } catch (error) {
+      } catch {
         res.status(400).json({ error: 'Decryption failed' });
       }
     });

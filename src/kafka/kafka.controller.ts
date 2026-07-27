@@ -16,7 +16,7 @@ export class KafkaController {
     try {
       // Decrypt the message
       const decrypted = await this.cryptoService.unboxRaw(
-        message.value as any,
+        message.value,
         Buffer.from('test-key')
       );
 
@@ -43,7 +43,7 @@ export class KafkaController {
     try {
       // Decrypt the message
       const decrypted = await this.cryptoService.unboxRaw(
-        message.value as any,
+        message.value,
         Buffer.from('test-key')
       );
 
@@ -70,7 +70,7 @@ export class KafkaController {
     try {
       // Attempt to decrypt invalid data (will fail)
       const decrypted = await this.cryptoService.unboxRaw(
-        message.value as any,
+        message.value,
         Buffer.from('test-key')
       );
 
@@ -86,7 +86,7 @@ export class KafkaController {
     try {
       // Quick processing for performance test
       const decrypted = await this.cryptoService.unboxRaw(
-        message.value as any,
+        message.value,
         Buffer.from('test-key')
       );
 
